@@ -1,4 +1,4 @@
-ucb_mma-6.x
+ucb_mma-7.x
 ===========
 
 PURPOSE
