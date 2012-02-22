@@ -1,8 +1,0 @@
-core = "6.x"
-//TODO: dependencies[] = cas???
-description = "Depending on email domain user authentication is handled differently."
-name = "Mixed Mode Authentication"
-package = "Other"
-project = "Mixed Mode Auth"
-version = "6.x-0.1"
-//project status url = "http://drupal_berkeley.localhost:8082/fserver"
