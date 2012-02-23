@@ -1,0 +1,8 @@
+core = "6.x"
+//TODO: dependencies[] = cas???
+description = "Facilitate multiple modes of authentication e.g. 1) standard Drupal authentication and 2) CAS authentication"
+name = "Mixed Mode Authentication"
+package = "Central Authentication Service"
+project = "ucb_mma"
+version = "6.x-0.1"
+//project status url = "http://drupal_berkeley.localhost:8082/fserver"
