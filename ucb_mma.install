@@ -1,0 +1,11 @@
+<?php
+/**
+ * Implementation of hook_install().
+ */
+function ucb_mma_install() {
+	if (variable_get("cas_login_form", "") != 0) {
+    drupal_set_message('UCB MMA has changed your CAS configuation to "Do not add link to login forms" at /admin/user/cas > Login Form', 'status');
+		variable_set("cas_login_form",  "0");
+	}
+}
+
