@@ -1,4 +1,9 @@
 <?php
+
+define('CAS_URI', preg_replace('@^/@', '', variable_get('cas_uri', '')));
+define('COOKIE_EXPIRES', time() + 60*60*24*365*10);
+define('COOKIE_PATH', '/');
+
 /**
  * Implementation of hook_menu_alter().
  *
@@ -30,11 +35,10 @@ function ucb_mma_user_page() {
 	global $_REQUEST, $_COOKIE; //TODO
 	
 	if ($_COOKIE['mma_method'] === '0') {
-		//not needed //include_once(drupal_get_path('module', 'cas') . '/user.module');
+		include_once(drupal_get_path('module', 'cas') . '/cas.module');
 	  return drupal_get_form('cas_login_block');			
 	} 
 	elseif  ($_COOKIE['mma_method'] === '1') {
-		//not needed //include_once(drupal_get_path('module', 'user') . '/user.module');
 	  return drupal_get_form('user_login');					
 	}
 	else {
@@ -81,16 +85,18 @@ function ucb_mma_register() {
 }
 
 function ucb_mma_register_submit($form, &$form_state) {
-	$tenyrs = 60*60*24*365*10;
-	if ($form_state['values']['mma-method'] === 0) {
-    setcookie('mma_method', 0, time() + $tenyrs);
-		drupal_goto(variable_get('cas_uri'));
+		switch ($form_state['values']['mma_method']) {
+  	case '0':
+  	  setcookie('mma_method', '0', COOKIE_EXPIRES, COOKIE_PATH);
+  	  drupal_goto(CAS_URI);
+  		break;
+    case 1:
+    	setcookie('mma_method', '1', COOKIE_EXPIRES, COOKIE_PATH);
+    	drupal_goto('user/register/1');
+  		break;
+    default:
+    	watchdog('ucb_mma', 'Invalid authentication type.', '', WATCHDOG_ERROR);
   }
-  else {
-  	setcookie('mma_method', 1, time() + $tenyrs);
-  	drupal_goto('user/register/1');
-  }
-
 }
 
 /**
@@ -118,54 +124,15 @@ function ucb_mma_login() {
 }
 
 function ucb_mma_login_submit($form, &$form_state) {
-	if ($form_state['values']['mma-method'] === 0) {
-    setcookie('mma_method', 0);
-		drupal_goto(variable_get('cas_uri'));
+	switch ($form_state['values']['mma_method']) {
+  	case '0':
+  	  setcookie('mma_method', '0', COOKIE_EXPIRES, COOKIE_PATH);
+  		break;
+    case 1:
+    	setcookie('mma_method', '1', COOKIE_EXPIRES, COOKIE_PATH);
+  		break;
+    default:
+    	watchdog('ucb_mma', 'Invalid authentication type.', '', WATCHDOG_ERROR);
   }
-  else {
-  	setcookie('mma_method', 1);
-  	drupal_goto('user');
-  }
-
+  drupal_goto('user');
 }
-
-  /*
-function ucb_mma_login_form($values = array(), &$form) {
-
-  $form['email'] = array(
-                             '#type' => 'textfield',
-                             '#title' => 'Email',
-  //TODO: maxlength dep on db field size
-                             '#maxlength' => 60,
-                             '#size' => $values['size'],
-                             '#required' => true, 
-                             '#weight' => 0,
-  //TODO: value from admin form
-                             '#description' => 'Please use your berkeley.edu email if you are a UC Berkeley employee',
-  );
-  //  $form['submit']['#value'] = 'Next'; //TODO: configurable
-  array_unshift($form['#validate'], 'ucb_mma_login_validate');
-
-  drupal_add_js(drupal_get_path('module', 'ucb_mma') . '/js/ucb_mma.js');
-  $mma_cas_uri = array('cas_uri' => variable_get('cas_uri', '/cas'));
-  drupal_add_js(array('mma' => $mma_cas_uri), 'setting');
-  return $form;
-
-}
-  */
-
-/*
- function ucb_mma_login_validate($form, &$form_state) {
-
- //won't catch something like bwood@.berkeley.edu nor bwood@..berkeley.edu, but that will fail the email module's validation so we're cool.
-
- if (preg_match("/.*(@berkeley.edu{0,1}|@[-A-Za-z0-9_.]*[.]{1}berkeley.edu)$/i", $form_state['values']['email'][0]['email']) <= 0) {
- //no match, proceed with standard login
- return;
- }
- else {
- //match bounce to cas
- }
-
- }
- */ 
