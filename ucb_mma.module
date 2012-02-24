@@ -42,7 +42,7 @@ function ucb_mma_user_page() {
 	  return drupal_get_form('user_login');					
 	}
 	else {
-		drupal_set_title('Choose Login Method');
+		drupal_set_title('Choose Login Method'); 
 	  return drupal_get_form('ucb_mma_login');					
 	}
 }
@@ -103,7 +103,7 @@ function ucb_mma_register_submit($form, &$form_state) {
  * 
  * ucb_mma user registration form
  */
-function ucb_mma_login() {
+function ucb_mma_login($b = 0) {
   $form = array();
   $form['mma_method'] = array(
     '#type' => 'radios',
@@ -115,7 +115,12 @@ function ucb_mma_login() {
     '#description' => t('If you are UC Berkeley staff, student, or affiliate, choose Calnet.<br />Everyone else choose "this site."'),
     //'#default_value' => $edit['custom'],
   );
-  
+  /*
+  $form['block'] =  array(
+    '#type' => 'hidden', 
+    '#value' => $b,
+  );
+  */
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => 'Next',
@@ -134,5 +139,51 @@ function ucb_mma_login_submit($form, &$form_state) {
     default:
     	watchdog('ucb_mma', 'Invalid authentication type.', '', WATCHDOG_ERROR);
   }
-  drupal_goto('user');
+  if ($form['#parameters'][2] !== 1) {
+    drupal_goto('user');
+  }
+}
+
+/**
+ * Implements hook_block().
+ *
+ * Provides MMA login block for anonymous users.
+ */
+function ucb_mma_block($op = 'list', $delta = 0, $edit = array()) {
+  global $user;
+  if ($op == 'list') {
+    $blocks[0]['info'] = t('Mixed Mode login');
+    return $blocks;
+  }
+  elseif ($op == 'view') {
+    $block = array();
+
+    switch ($delta) {
+      case 0:
+        // For usability's sake, avoid showing two login forms on one page.
+        //if (!$user->uid && !(arg(0) == 'user' && !is_numeric(arg(1)))) {
+          $block['subject'] = t('User login');
+          $block['content'] = ucb_mma_block_content();
+        //}
+        return $block;
+    }
+  }
+}
+
+/**
+ * Conten for ucb_mma_block
+ */
+function ucb_mma_block_content() {
+	global $_REQUEST, $_COOKIE; //TODO
+	
+	if ($_COOKIE['mma_method'] === '0') {
+		include_once(drupal_get_path('module', 'cas') . '/cas.module');
+	  return drupal_get_form('cas_login_block');			
+	} 
+	elseif  ($_COOKIE['mma_method'] === '1') {
+	  return drupal_get_form('user_login_block');					
+	}
+	else {
+	  return drupal_get_form('ucb_mma_login', 1);					
+	}
 }
