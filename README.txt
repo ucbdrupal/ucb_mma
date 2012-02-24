@@ -5,7 +5,9 @@ TABLE OF CONTENTS
 -----------------
 1.   Purpose
 2.   Requirements
-3.   Standard Configuration
+3.   Standard configuration applied by this module
+4.   Configuration options for the administrator
+4.1    Mixed Mode Login block
 
 PURPOSE
 -------
@@ -26,8 +28,8 @@ is installed on the site. UC Berkeley sites can satisfy this
 requirement by installing the UCB CAS module which installs and
 configures everything needed to use UC Berkeley's CAS server.
 
-STANDARD CONFIGURATION
-----------------------
+STANDARD CONFIGURATION APPLIED BY THIS MODULE
+---------------------------------------------
 
 The CAS module might be configured to override Drupal's standard user
 login form.  If you are using UCB MMA, this setting is
@@ -48,3 +50,18 @@ user will not be able to login.
 
 If you enable UCB CAS after you enable UCB MMA, UCB CAS will detect
 UCB MMA's presence and will not override the Drupal login form.
+
+CONFIGURATION OPTIONS FOR THE ADMINISTRATOR
+-------------------------------------------
+
+*Mixed Mode Login Block*
+
+The Mixed Mode Login block is disabled by default.  With this block
+disabled a user can register for an account at /user/register and they
+can login at /user. 
+
+Enabling the block provides a block similar to the standard User Login
+block which uses the MMA logic to keep the user in the correct
+"authentication channel."
+
+Enable or disable the block at /admin/build/blocks.
