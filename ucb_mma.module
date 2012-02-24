@@ -29,10 +29,67 @@ function ucb_mma_menu_alter(&$items) {
 }
 
 /**
+ * Implementation of hook_menu().
+ *
+ * @return An array of menu items.
+ */ 
+
+function ucb_mma_menu() {
+  $items = array();
+
+  $items['mma'] = array(
+    'title' => '',
+    'description' => '',
+    'page callback' => '',
+    'page callback' => 'ucb_mma_user_page',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function ucb_mma_form_alter(&$form, $form_state, $form_id) {
+  $login_method = ucb_mma_login_method();
+	switch($form_id) {
+  	case 'user_login_block':
+  		/* 
+  		 * Remove "create a new account" to keep things simple.
+  		 * Note: variable_set('user_register', 0) not appropriate for MMA. 
+  		 */
+  		$form['links']['#value'] = '<div class="item-list"><ul><li class="first"><a href="/user/password" title="Request new password via e-mail.">Request new password</a></li></ul></div>';
+  		$form['pass']['#description'] = t('Your login method is !method. <a href="mma/help">Change?</a>', array('!method' => $login_method ));
+  		break;
+  }
+}
+
+/**
+ * Return login method based on $_COOKIE['mma_method']
+ */
+function ucb_mma_login_method() {
+	switch($_COOKIE['mma_method']) {
+		case '0':
+			return 'Calnet';
+			break;
+		case '1':
+			return '"this site"';
+			break;
+	}
+}
+
+
+/**
  * user page: login or view user data
  */
-function ucb_mma_user_page() {
-	global $_REQUEST, $_COOKIE; //TODO
+function ucb_mma_user_page($help = FALSE) {
+  if ($help) {
+  	drupal_set_title('Login Method Help'); 
+  	drupal_set_message('If you change your login method you may loose access to content you created before the change.', 'warning');
+    return drupal_get_form('ucb_mma_explanation');			
+  }
 	
 	if ($_COOKIE['mma_method'] === '0') {
 		include_once(drupal_get_path('module', 'cas') . '/cas.module');
@@ -70,10 +127,10 @@ function ucb_mma_register() {
     '#type' => 'radios',
     '#title' => t('Login method'),
     '#options' => array(
-      t('Use Calnet'),
-      t('Use this site'),
+      t('Calnet'),
+      t('Standard (Drupal)'),
     ),
-    '#description' => t('If you are UC Berkeley staff, student, or affiliate, choose Calnet.<br />Everyone else choose "this site."'),
+    '#description' => t('If you are UC Berkeley staff, student, or affiliate, choose Calnet.<br />Everyone else choose Standard.'),
     //'#default_value' => $edit['custom'],
   );
   
@@ -115,12 +172,6 @@ function ucb_mma_login($b = 0) {
     '#description' => t('If you are UC Berkeley staff, student, or affiliate, choose Calnet.<br />Everyone else choose "this site."'),
     //'#default_value' => $edit['custom'],
   );
-  /*
-  $form['block'] =  array(
-    '#type' => 'hidden', 
-    '#value' => $b,
-  );
-  */
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => 'Next',
@@ -171,6 +222,54 @@ function ucb_mma_block($op = 'list', $delta = 0, $edit = array()) {
 }
 
 /**
+ * 
+ * Form builder for explanation form
+ */
+function ucb_mma_explanation() {
+	$form = array();
+ 	$explanation =<<<EOT
+There are two ways to login to this site:
+<ol>
+<li>Calnet</li>
+<li>Standard authentication (Drupal).</li>
+</ol>
+<p>In general, University of California Berekeley staff, students and affiliates should use Calnet. Everyone else should use Standard.</p>
+<p><b>When is it appropriate to change my login method?</b></p>
+<ul>
+<li>You chose the wrong menthod the first time you came to this site.</li>
+<li>Someone else was using this browser and they use a different login method than I do.</li>
+</ul>
+<p><b>Why is my login method sometimes not retained?</b></p>
+<p>Your login method is stored in a cookie. It will not be retained if you delete cookies on your browser or if you change to a new browser.</p>
+<p><b>Is storing my login method in a cookie secure?</b></p>
+<p>This approach does not compromise security. It is true that someone could steal your cookie, but doing so would not grant them access to this site. The attacker would only have 
+gained access to a cookie containing a number.  They would still have to defeat your login mechanism in order to gain access to the site.</p>
+EOT;
+
+ $form['explanation'] = array(
+   '#value' => $explanation,
+ );
+ $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Change Login Method',
+  );
+ $form['cancel'] = array(
+    //  '#type' => 'button',
+    '#value' => l(t('Cancel'), '', array('query' => '')),
+    '#weight' => $form['submit']['#weight'] + 1,
+  );
+
+  return $form;  
+}
+
+function ucb_mma_explanation_submit($form, &$form_state) {
+  //expire the cookie
+	setcookie('mma_method', '', time() - 1, COOKIE_PATH);
+	$_SESSION['messages'] = NULL; //clear the drupal_set_message
+	drupal_goto('user');
+}
+
+/**
  * Conten for ucb_mma_block
  */
 function ucb_mma_block_content() {
@@ -187,3 +286,4 @@ function ucb_mma_block_content() {
 	  return drupal_get_form('ucb_mma_login', 1);					
 	}
 }
+
