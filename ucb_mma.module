@@ -61,7 +61,13 @@ function ucb_mma_form_alter(&$form, $form_state, $form_id) {
   		 * Note: variable_set('user_register', 0) not appropriate for MMA. 
   		 */
   		$form['links']['#value'] = '<div class="item-list"><ul><li class="first"><a href="/user/password" title="Request new password via e-mail.">Request new password</a></li></ul></div>';
-  		$form['pass']['#description'] = t('Your login method is !method. <a href="mma/help">Change?</a>', array('!method' => $login_method ));
+  		$form['pass']['#description'] = t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method ));
+  		break;
+  	case 'user_login':
+  		$form['pass']['#description'] .= '<br />' . t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method ));
+  		break;
+  	case 'cas_login_block':
+  		$form['links']['#value'] = t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method ));
   		break;
   }
 }
@@ -75,7 +81,7 @@ function ucb_mma_login_method() {
 			return 'Calnet';
 			break;
 		case '1':
-			return '"this site"';
+			return 'Standard';
 			break;
 	}
 }
@@ -236,7 +242,7 @@ There are two ways to login to this site:
 <p>In general, University of California Berekeley staff, students and affiliates should use Calnet. Everyone else should use Standard.</p>
 <p><b>When is it appropriate to change my login method?</b></p>
 <ul>
-<li>You chose the wrong menthod the first time you came to this site.</li>
+<li>I chose the wrong method the first time I came to this site.</li>
 <li>Someone else was using this browser and they use a different login method than I do.</li>
 </ul>
 <p><b>Why is my login method sometimes not retained?</b></p>
