@@ -67,7 +67,7 @@ function ucb_mma_form_alter(&$form, $form_state, $form_id) {
   		$form['pass']['#description'] .= '<br />' . t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method ));
   		break;
   	case 'cas_login_block':
-  		$form['links']['#value'] = t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method ));
+  		$form['links']['#value'] = '<div class = "description">'. t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method )) . '</div>';
   		break;
   }
 }
@@ -93,7 +93,7 @@ function ucb_mma_login_method() {
 function ucb_mma_user_page($help = FALSE) {
   if ($help) {
   	drupal_set_title('Login Method Help'); 
-  	drupal_set_message('If you change your login method you may loose access to content you created before the change.', 'warning');
+  	drupal_set_message('If you change your login method you may loose access to content you created before the change.', 'warning', FALSE);
     return drupal_get_form('ucb_mma_explanation');			
   }
 	
@@ -218,10 +218,10 @@ function ucb_mma_block($op = 'list', $delta = 0, $edit = array()) {
     switch ($delta) {
       case 0:
         // For usability's sake, avoid showing two login forms on one page.
-        //if (!$user->uid && !(arg(0) == 'user' && !is_numeric(arg(1)))) {
+        if (!$user->uid && !(arg(0) == 'user' && !is_numeric(arg(1)))) {
           $block['subject'] = t('User login');
           $block['content'] = ucb_mma_block_content();
-        //}
+        }
         return $block;
     }
   }
@@ -237,7 +237,7 @@ function ucb_mma_explanation() {
 There are two ways to login to this site:
 <ol>
 <li>Calnet</li>
-<li>Standard authentication (Drupal).</li>
+<li>Standard authentication (Drupal)</li>
 </ol>
 <p>In general, University of California Berekeley staff, students and affiliates should use Calnet. Everyone else should use Standard.</p>
 <p><b>When is it appropriate to change my login method?</b></p>
