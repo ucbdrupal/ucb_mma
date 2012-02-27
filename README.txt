@@ -8,6 +8,8 @@ TABLE OF CONTENTS
 3.   Standard configuration applied by this module
 4.   Configuration options for the administrator
 4.1    Mixed Mode Login block
+4.2    Other login blocks
+4.3    User registration settings
 
 PURPOSE
 -------
@@ -65,3 +67,30 @@ block which uses the MMA logic to keep the user in the correct
 "authentication channel."
 
 Enable or disable the block at /admin/build/blocks.
+
+*Other login blocks*
+
+Other modules (e.g. User and CAS) provide login blocks that may be
+enabled on your site. It is best to only present the Mixed Mode Login
+block to the user.  During installation ucb_mma will alert you if
+other login blocks are enabled.
+
+*User registration settings*
+
+During installation ucb_mma will check your user registration settings
+and alert you if you should consider changing your settings.
+
+It's often best not to use the setting "Only site administrators can
+create new user accounts" at /admin/user/settings. When a brand new
+user comes to your site we don't know if they will want to login using
+CAS or standard Drupal authentication. If the user is allowed to
+create their own account (you can require administrator approval) then
+their account will always be created using the process appropriate for
+the user-selected authetication method.
+
+Alternatively you can require site administrators to create all
+accounts manually. The administrator will need to take care that they
+create CAS accounts for CAS users and standard accounts for standard
+users.  (The cas_attributes module (included in the ucb_cas module)
+provides a "create CAS user" function.) For more on allowing users to
+create accounts, proper role assignation, see the ucb_cas README.

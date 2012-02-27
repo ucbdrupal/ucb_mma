@@ -3,8 +3,27 @@
  * Implementation of hook_install().
  */
 function ucb_mma_install() {
+	/*
+	 * If login blocks are enabled, replace them with MMA block
+	 */
+	include_once(drupal_get_path('module', 'ucb_mma') . '/ucb_mma.module');
+	$login_blocks = ucb_mma_login_blocks_check();
+	if (count($login_blocks) > 0) {
+		while (list($k, $v) = each($login_blocks)) {
+			drupal_set_message('Consider disabling the "' . $v[0] . '" block.', 'warning', FALSE);
+		}
+	}
+	drupal_set_message('Consider enabling the "Mixed Mode login" block at ' . l('/admin/build/block', 'admin/build/block') . '.', 'warning', FALSE);	
+	
+	// warn about in appropriate account creation settings
+	if (variable_get("user_register", NULL) !== 0) {
+    drupal_set_message('You are using "Only site administrators can create new user accounts." It\'s best to choose a different option at '. l('/admin/user/settings', 'admin/user/settings') .' > Public Registrations.', 'warning');
+		variable_set("cas_login_form",  "0");
+	}
+	
+	//warn about cas.module form_alter of user_login form
 	if (variable_get("cas_login_form", "") != 0) {
-    drupal_set_message('UCB MMA has changed your CAS configuation to "Do not add link to login forms" at /admin/user/cas > Login Form', 'status');
+    drupal_set_message('UCB MMA has changed your CAS configuation to "Do not add link to login forms" at ' .  l('/admin/user/cas', 'admin/user/cas') . ' > Login Form.', 'status');
 		variable_set("cas_login_form",  "0");
 	}
 }
