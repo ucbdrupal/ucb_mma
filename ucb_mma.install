@@ -16,7 +16,7 @@ function ucb_mma_install() {
 	drupal_set_message('Consider enabling the "Mixed Mode login" block at ' . l('/admin/build/block', 'admin/build/block') . '.', 'warning', FALSE);	
 	
 	// warn about in appropriate account creation settings
-	if (variable_get("user_register", NULL) !== 0) {
+	if (variable_get("user_register", 1) === 1) {
     drupal_set_message('You are using "Only site administrators can create new user accounts." It\'s best to choose a different option at '. l('/admin/user/settings', 'admin/user/settings') .' > Public Registrations.', 'warning');
 		variable_set("cas_login_form",  "0");
 	}

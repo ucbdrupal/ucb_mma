@@ -5,34 +5,46 @@ define('COOKIE_EXPIRES', time() + 60*60*24*365*10);
 define('COOKIE_PATH', '/');
 /**
  * Implementation of hook_init().
- */
-function ucb_mma_init() {
-	include_once(drupal_get_path('module', 'user') . '/user.pages.inc');
-}
+
+ function ucb_mma_init() {
+
+ }
+*/ 
+
 /**
  * Implementation of hook_menu_alter().
  *
  * @param $items Associative array of menu router definitions returned from hook_menu().
  */
 function ucb_mma_menu_alter(&$items) {
+	
+	$items['user'] = array(
+    'title' => '',
+    'description' => '',
+    'page callback' => 'ucb_mma_user_page',
+	//    'access arguments' => TRUE, //TODO: why does user.module use this.  error here.
+	  'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,  
+	);
 
 	$items['user/register'] = array(
     'title' => 'User Registration',
     'description' => '',
     'page callback' => 'ucb_mma_user_registration_page',
-    'access arguments' => array('user_register'),
+	  'access callback' => 'user_register_access',
     'type' => MENU_CALLBACK,  
 	);
-
-	$items['user'] = array(
-    'title' => '',
-    'description' => '',
-    'page callback' => 'ucb_mma_user_page',
-//    'access arguments' => TRUE, //TODO: why does user.module use this.  error here.
-	  'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,  
-	);
-
+	
+  $items['user/password'] = array(
+    'title' => 'Request new password',
+    //'page callback' => 'drupal_get_form',
+    'page callback' => 'ucb_mma_user_pass_page',
+    //'page arguments' => array('user_pass'),
+    'access callback' => 'user_is_anonymous',
+    'type' => MENU_CALLBACK,
+    //'file' => drupal_get_path('module', 'user') . '/' . 'user.pages.inc',
+    //'file' => 'user.pages.inc',
+  );
 
 }
 
@@ -49,7 +61,7 @@ function ucb_mma_menu() {
     'title' => '',
     'description' => '',
     'page callback' => '',
-    'page callback' => 'ucb_mma_user_page',
+    'page callback' => 'ucb_mma_explanation_page',
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
 	);
@@ -64,34 +76,41 @@ function ucb_mma_form_alter(&$form, $form_state, $form_id) {
 	$login_method = ucb_mma_login_method();
 	switch($form_id) {
 		case 'user_login_block':
-			/*
-			 * Remove "create a new account" to keep things simple.
-			 * Note: variable_set('user_register', 0) not appropriate for MMA.
-			 */
-			$form['links']['#value'] = '<div class="item-list"><ul><li class="first"><a href="/user/password" title="Request new password via e-mail.">Request new password</a></li></ul></div>';
+			if ($_COOKIE['mma_method'] === '0') {
+				/*
+				 * If Calnet, remove "create a new account" to keep things simple.
+				 * Note: variable_set('user_register', 0) not appropriate for MMA.
+				 */
+				//$form['links']['#value'] = '<div class="item-list"><ul><li class="first"><a href="/user/password" title="Request new password via e-mail.">Request new password</a></li></ul></div>';
+			}
 			$form['pass']['#description'] = t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method ));
 			break;
 		case 'user_login':
 			$form['pass']['#description'] .= '<br />' . t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method ));
+		  if ($_COOKIE['mma_method'] === '1') {
+			  $form['links']['#value'] = '<div class="item-list"><ul><li class="first"><a href="/user/register" title="Create a new user account.">Create new account</a></li>
+<li class="last"><a href="/user/password" title="Request new password via e-mail.">Request new password</a></li>
+</ul></div>';
+		  }
 			break;
 		case 'cas_login_block':
 			$form['links']['#value'] = '<div class = "description">'. t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method )) . '</div>';
 			break;
-/*
-			case 'user_pass':
-			if ($_COOKIE['mma_method'] === '0') {
+			/*
+			 case 'user_pass':
+			 if ($_COOKIE['mma_method'] === '0') {
 				//$form = array();
 				$calnet_pass_help =<<<EOT
-You authenticate using Calnet. Changing your Calnet password means that you are changing it for <b>all sites that use Calnet authentication</b>.
-Please consider this carefully before you proceed with this change.    	
-EOT;
-			}
-			$form['help']['#value'] = t($calnet_pass_help);
-			break;
+				You authenticate using Calnet. Changing your Calnet password means that you are changing it for <b>all sites that use Calnet authentication</b>.
+				Please consider this carefully before you proceed with this change.
+				EOT;
+				}
+				$form['help']['#value'] = t($calnet_pass_help);
+				break;
 
-		case 'user_register':
-			break;
-*/
+				case 'user_register':
+				break;
+				*/
 
 	}
 }
@@ -110,45 +129,77 @@ function ucb_mma_login_method() {
 	}
 }
 
+/**
+ * Change method explanation page
+ */
+function ucb_mma_explanation_page() {
+	drupal_set_title('Login Method Help');
+	drupal_set_message('If you change your login method you may loose access to content you created before the change.', 'warning', FALSE);
+	return drupal_get_form('ucb_mma_explanation');
+}
 
 /**
  * user page: login or view user data
  */
-function ucb_mma_user_page($help = FALSE) {
-	if ($help) {
-		drupal_set_title('Login Method Help');
-		drupal_set_message('If you change your login method you may loose access to content you created before the change.', 'warning', FALSE);
-		return drupal_get_form('ucb_mma_explanation');
-	}
+function ucb_mma_user_page() {
 
 	if ($_COOKIE['mma_method'] === '0') {
 		include_once(drupal_get_path('module', 'cas') . '/cas.module');
 		return drupal_get_form('cas_login_block');
 	}
 	elseif  ($_COOKIE['mma_method'] === '1') {
-	  if (variable_get("cas_login_form", "") != 0) {
-		  drupal_set_message('Error: UCB MMA requires that you use "Do not add link to login forms" at /admin/user/cas', 'error', FALSE);
-		  return '<p></p>';		
+		if (variable_get("cas_login_form", "") != 0) {
+			drupal_set_message('Error: UCB MMA requires that you use "Do not add link to login forms" at /admin/user/cas', 'error', FALSE);
+			return '<p></p>';
 		}
 		return drupal_get_form('user_login');
 	}
 	else {
 		drupal_set_title('Choose Login Method');
-		return drupal_get_form('ucb_mma_login');
+		return drupal_get_form('ucb_mma_login', $_GET['mma']);
 	}
+}
+
+/**
+ * user password request
+ */
+function ucb_mma_user_pass_page() {
+	include_once(drupal_get_path('module', 'user') . '/user.pages.inc');
+  return drupal_get_form('user_pass');	
 }
 
 /**
  * user registration page
  */
 function ucb_mma_user_registration_page($step = 0) {
-	if ($step == 0) {
-		return drupal_get_form('ucb_mma_register');
+	//only anonymous users will get here
+	switch ($_COOKIE['mma_method']) {
+		case '0':
+			drupal_goto(CAS_URI);
+			break;
+		case '1':
+			return drupal_get_form('user_register');
+			break;
 	}
-	elseif ($step == 1) {
+
+	switch($step) {
+		case 0:
+			return drupal_get_form('ucb_mma_register');
+			break;
+		case 1:
+			return drupal_get_form('user_register');
+			break;
+	}
+
+	/*
+	 if ($step == 0) {
+		return drupal_get_form('ucb_mma_register');
+		}
+		elseif ($step == 1) {
 		drupal_set_title("User Registration: Step 2");
 		return drupal_get_form('user_register');
-	}
+		}
+		*/
 }
 
 /**
@@ -164,7 +215,8 @@ function ucb_mma_register() {
 	t('Calnet'),
 	t('Standard (Drupal)'),
 	),
-    '#description' => t('If you are UC Berkeley staff, student, or affiliate, choose Calnet.<br />Everyone else choose Standard.'),
+	  '#default_value' => '', 
+    '#description' => t('If you are UC Berkeley staff, student, or affiliate, choose Calnet.<br />Everyone else choose should choose Standard.'),
 	//'#default_value' => $edit['custom'],
 	);
 
@@ -194,17 +246,17 @@ function ucb_mma_register_submit($form, &$form_state) {
  *
  * ucb_mma user registration form
  */
-function ucb_mma_login($b = 0) {
+function ucb_mma_login() {
 	$form = array();
 	$form['mma_method'] = array(
     '#type' => 'radios',
     '#title' => t('Login method'),
     '#options' => array(
 	t('Use Calnet'),
-	t('Use this site'),
+	t('Use Standard (Drupal)'),
 	),
-    '#description' => t('If you are UC Berkeley staff, student, or affiliate, choose Calnet.<br />Everyone else choose "this site."'),
-	//'#default_value' => $edit['custom'],
+  '#description' => t('If you are UC Berkeley staff, student, or affiliate, choose Calnet.<br />Everyone else choose should Standard.'),
+	'#default_value' => $_GET['mma'],
 	);
 	$form['submit'] = array(
     '#type' => 'submit',
@@ -224,9 +276,10 @@ function ucb_mma_login_submit($form, &$form_state) {
 		default:
 			watchdog('ucb_mma', 'Invalid authentication type.', '', WATCHDOG_ERROR);
 	}
-	if ($form['#parameters'][2] !== 1) {
-		drupal_goto('user');
-	}
+	// if they clicked Change on the block leave them at the current pg
+	//if ($form['#parameters'][2] !== 1) {
+	drupal_goto('user');
+	//}
 }
 
 /**
@@ -297,10 +350,11 @@ EOT;
 }
 
 function ucb_mma_explanation_submit($form, &$form_state) {
+	$old_method = $_COOKIE['mma_method'];
 	//expire the cookie
 	setcookie('mma_method', '', time() - 1, COOKIE_PATH);
-	$_SESSION['messages'] = NULL; //clear the drupal_set_message
-	drupal_goto('user');
+	$_SESSION['messages'] = NULL; //clear the drupal_set_message if it exists
+	drupal_goto('user', array('mma' => $old_method));
 }
 
 /**
@@ -322,18 +376,18 @@ function ucb_mma_block_content() {
 }
 
 /**
- * 
+ *
  * Check for enabled login blocks
  */
 function ucb_mma_login_blocks_check() {
-  //TODO: ucb_cas needs this too	
-  $theme = variable_get('theme_default', '');
-  $blocks = _block_rehash($theme);
-  $login_blocks = array();
-  foreach ($blocks as $b) {
-  	if ((stripos($b['info'], 'login') !== FALSE) && ($b['region'] != -1)) {
-  		$login_blocks[$b['module']] = array($b['info'], $b['region']);
-  	}
-  }
-  return $login_blocks;
+	//TODO: ucb_cas needs this too
+	$theme = variable_get('theme_default', '');
+	$blocks = _block_rehash($theme);
+	$login_blocks = array();
+	foreach ($blocks as $b) {
+		if ((stripos($b['info'], 'login') !== FALSE) && ($b['region'] != -1)) {
+			$login_blocks[$b['module']] = array($b['info'], $b['region']);
+		}
+	}
+	return $login_blocks;
 }
