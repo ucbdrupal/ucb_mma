@@ -9,7 +9,7 @@ define('COOKIE_PATH', '/');
  function ucb_mma_init() {
 
  }
-*/ 
+ */
 
 /**
  * Implementation of hook_menu_alter().
@@ -17,7 +17,7 @@ define('COOKIE_PATH', '/');
  * @param $items Associative array of menu router definitions returned from hook_menu().
  */
 function ucb_mma_menu_alter(&$items) {
-	
+
 	$items['user'] = array(
     'title' => '',
     'description' => '',
@@ -34,17 +34,17 @@ function ucb_mma_menu_alter(&$items) {
 	  'access callback' => 'user_register_access',
     'type' => MENU_CALLBACK,  
 	);
-	
-  $items['user/password'] = array(
+
+	$items['user/password'] = array(
     'title' => 'Request new password',
-    //'page callback' => 'drupal_get_form',
+	//'page callback' => 'drupal_get_form',
     'page callback' => 'ucb_mma_user_pass_page',
-    //'page arguments' => array('user_pass'),
+	//'page arguments' => array('user_pass'),
     'access callback' => 'user_is_anonymous',
     'type' => MENU_CALLBACK,
-    //'file' => drupal_get_path('module', 'user') . '/' . 'user.pages.inc',
-    //'file' => 'user.pages.inc',
-  );
+	//'file' => drupal_get_path('module', 'user') . '/' . 'user.pages.inc',
+	//'file' => 'user.pages.inc',
+	);
 
 }
 
@@ -87,11 +87,11 @@ function ucb_mma_form_alter(&$form, $form_state, $form_id) {
 			break;
 		case 'user_login':
 			$form['pass']['#description'] .= '<br />' . t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method ));
-		  if ($_COOKIE['mma_method'] === '1') {
-			  $form['links']['#value'] = '<div class="item-list"><ul><li class="first"><a href="/user/register" title="Create a new user account.">Create new account</a></li>
+			if ($_COOKIE['mma_method'] === '1') {
+				$form['links']['#value'] = '<div class="item-list"><ul><li class="first"><a href="/user/register" title="Create a new user account.">Create new account</a></li>
 <li class="last"><a href="/user/password" title="Request new password via e-mail.">Request new password</a></li>
 </ul></div>';
-		  }
+			}
 			break;
 		case 'cas_login_block':
 			$form['links']['#value'] = '<div class = "description">'. t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method )) . '</div>';
@@ -143,21 +143,28 @@ function ucb_mma_explanation_page() {
  */
 function ucb_mma_user_page() {
 
+	// move logic to javascript
+	/*
 	if ($_COOKIE['mma_method'] === '0') {
-		include_once(drupal_get_path('module', 'cas') . '/cas.module');
-		return drupal_get_form('cas_login_block');
+	include_once(drupal_get_path('module', 'cas') . '/cas.module');
+	return drupal_get_form('cas_login_block');
 	}
 	elseif  ($_COOKIE['mma_method'] === '1') {
-		if (variable_get("cas_login_form", "") != 0) {
-			drupal_set_message('Error: UCB MMA requires that you use "Do not add link to login forms" at /admin/user/cas', 'error', FALSE);
-			return '<p></p>';
-		}
-		return drupal_get_form('user_login');
+	if (variable_get("cas_login_form", "") != 0) {
+	drupal_set_message('Error: UCB MMA requires that you use "Do not add link to login forms" at /admin/user/cas', 'error', FALSE);
+	return '<p></p>';
+	}
+	return drupal_get_form('user_login');
 	}
 	else {
-		drupal_set_title('Choose Login Method');
-		return drupal_get_form('ucb_mma_login', $_GET['mma']);
+	drupal_set_title('Choose Login Method');
+	return drupal_get_form('ucb_mma_login', $_GET['mma']);
 	}
+	*/
+	ucb_mma_add_js();
+	//drupal_set_title('Choose Login Method');
+	$mma_form = '<div id = "ucb_mma-login"><h2>Choose Login Method</h2>' . drupal_get_form('ucb_mma_login', $_GET['mma']) . '</div>';
+	return $mma_form;
 }
 
 /**
@@ -165,7 +172,7 @@ function ucb_mma_user_page() {
  */
 function ucb_mma_user_pass_page() {
 	include_once(drupal_get_path('module', 'user') . '/user.pages.inc');
-  return drupal_get_form('user_pass');	
+	return drupal_get_form('user_pass');
 }
 
 /**
@@ -210,7 +217,7 @@ function ucb_mma_register() {
 	$form = array();
 	$form['mma_method'] = array(
     '#type' => 'radios',
-    '#title' => t('Login method'),
+	//'#title' => t('Login method'),
     '#options' => array(
 	t('Calnet'),
 	t('Standard (Drupal)'),
@@ -250,7 +257,7 @@ function ucb_mma_login() {
 	$form = array();
 	$form['mma_method'] = array(
     '#type' => 'radios',
-    '#title' => t('Login method'),
+	//    '#title' => t('Login method'),
     '#options' => array(
 	t('Use Calnet'),
 	t('Use Standard (Drupal)'),
@@ -283,6 +290,27 @@ function ucb_mma_login_submit($form, &$form_state) {
 }
 
 /**
+ * Add js
+ */
+function ucb_mma_add_js($block = FALSE) {
+	$title = '';
+	if ($block) {
+		$block = '_block';
+	}
+	else {
+	  $block = '';
+	  $title = '<h2>User Login</h2>';
+	}
+	//render the possible forms and pass them to javascript
+	$login_forms = array();
+	$login_forms[] = $title . drupal_get_form('cas_login_block'); //0th
+	$login_forms[] = $title . drupal_get_form('user_login' . $block);
+	drupal_add_js(array('ucb_mma' => $login_forms), 'setting');
+	drupal_add_js(drupal_get_path('module', 'ucb_mma') . '/js/ucb_mma_login_block.js');
+
+}
+
+/**
  * Implements hook_block().
  *
  * Provides MMA login block for anonymous users.
@@ -290,7 +318,9 @@ function ucb_mma_login_submit($form, &$form_state) {
 function ucb_mma_block($op = 'list', $delta = 0, $edit = array()) {
 	global $user;
 	if ($op == 'list') {
+		$blocks = array();
 		$blocks[0]['info'] = t('Mixed Mode login');
+		$blocks[1]['info'] = t('Mixed Mode Login (js)');
 		return $blocks;
 	}
 	elseif ($op == 'view') {
@@ -300,11 +330,15 @@ function ucb_mma_block($op = 'list', $delta = 0, $edit = array()) {
 			case 0:
 				// For usability's sake, avoid showing two login forms on one page.
 				if (!$user->uid && !(arg(0) == 'user' && !is_numeric(arg(1)))) {
+					ucb_mma_add_js(TRUE);
 					$block['subject'] = t('User login');
-					$block['content'] = ucb_mma_block_content();
+					//$block['content'] = ucb_mma_block_content(); //remove this function?
+					$block['content'] = drupal_get_form('ucb_mma_login');
 				}
-				return $block;
+				break;
 		}
+
+		return $block;
 	}
 }
 
