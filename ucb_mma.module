@@ -72,45 +72,59 @@ function ucb_mma_menu() {
 /**
  * Implementation of hook_form_alter().
  */
+
+/*
+ function ucb_mma_form_alter(&$form, $form_state, $form_id) {
+ //TODO: revive form_alter make js degradation nicer?
+ $login_method = ucb_mma_login_method();
+ switch($form_id) {
+ case 'user_login_block':
+ if ($_COOKIE['mma_method'] === '0') {
+
+ * If Calnet, remove "create a new account" to keep things simple.
+ * Note: variable_set('user_register', 0) not appropriate for MMA.
+
+ //$form['links']['#value'] = '<div class="item-list"><ul><li class="first"><a href="/user/password" title="Request new password via e-mail.">Request new password</a></li></ul></div>';
+ }
+ $form['pass']['#description'] = t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method ));
+ break;
+ case 'user_login':
+ //$form['pass']['#description'] .= '<br />' . t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method ));
+ if ($_COOKIE['mma_method'] === '1') {
+ $form['links']['#value'] = '<div class="item-list"><ul><li class="first"><a href="/user/register" title="Create a new user account.">Create new account</a></li>
+ <li class="last"><a href="/user/password" title="Request new password via e-mail.">Request new password</a></li>
+ </ul></div>';
+ }
+ break;
+ case 'cas_login_block':
+ $form['links']['#value'] = '<div class = "description">'. t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method )) . '</div>';
+ break;
+
+ }
+ }
+ */
+
 function ucb_mma_form_alter(&$form, $form_state, $form_id) {
-	$login_method = ucb_mma_login_method();
+	//TODO: revive form_alter make js degradation nicer?
+
 	switch($form_id) {
 		case 'user_login_block':
-			if ($_COOKIE['mma_method'] === '0') {
-				/*
-				 * If Calnet, remove "create a new account" to keep things simple.
-				 * Note: variable_set('user_register', 0) not appropriate for MMA.
-				 */
-				//$form['links']['#value'] = '<div class="item-list"><ul><li class="first"><a href="/user/password" title="Request new password via e-mail.">Request new password</a></li></ul></div>';
-			}
-			$form['pass']['#description'] = t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method ));
+			/*
+			 * If Calnet, remove "create a new account" to keep things simple.
+			 * Note: variable_set('user_register', 0) not appropriate for MMA.
+			 */
+			$form['pass']['#description'] = t('');
+			//$form['links'] = '<div class = "description"></div>';
 			break;
 		case 'user_login':
-			$form['pass']['#description'] .= '<br />' . t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method ));
-			if ($_COOKIE['mma_method'] === '1') {
-				$form['links']['#value'] = '<div class="item-list"><ul><li class="first"><a href="/user/register" title="Create a new user account.">Create new account</a></li>
-<li class="last"><a href="/user/password" title="Request new password via e-mail.">Request new password</a></li>
-</ul></div>';
-			}
+			$form['links']['#value'] = '<div class="item-list"><ul><li class="first"><a href="/user/register" title="Create a new user account.">Create new account</a></li>
+ <li class="last"><a href="/user/password" title="Request new password via e-mail.">Request new password</a></li>
+ </ul></div>';
+			$form['links']['#weight'] = $form['submit']['#weight'] + 1; 
 			break;
 		case 'cas_login_block':
-			$form['links']['#value'] = '<div class = "description">'. t('Your login method is !method. <a href="/mma/help">Change?</a>', array('!method' => $login_method )) . '</div>';
+			$form['links']['#value'] = '<div class = "description"></div>';
 			break;
-			/*
-			 case 'user_pass':
-			 if ($_COOKIE['mma_method'] === '0') {
-				//$form = array();
-				$calnet_pass_help =<<<EOT
-				You authenticate using Calnet. Changing your Calnet password means that you are changing it for <b>all sites that use Calnet authentication</b>.
-				Please consider this carefully before you proceed with this change.
-				EOT;
-				}
-				$form['help']['#value'] = t($calnet_pass_help);
-				break;
-
-				case 'user_register':
-				break;
-				*/
 
 	}
 }
@@ -298,8 +312,8 @@ function ucb_mma_add_js($block = FALSE) {
 		$block = '_block';
 	}
 	else {
-	  $block = '';
-	  $title = '<h2>User Login</h2>';
+		$block = '';
+		$title = '<h2>User Login</h2>';
 	}
 	//render the possible forms and pass them to javascript
 	$login_forms = array();
@@ -384,15 +398,13 @@ EOT;
 }
 
 function ucb_mma_explanation_submit($form, &$form_state) {
-	$old_method = $_COOKIE['mma_method'];
 	//expire the cookie
-	setcookie('mma_method', '', time() - 1, COOKIE_PATH);
+	//setcookie('mma_method', '', time() - 1, COOKIE_PATH);
 	$_SESSION['messages'] = NULL; //clear the drupal_set_message if it exists
-	drupal_goto('user', array('mma' => $old_method));
+	drupal_goto('user', array('reset' => ''));
 }
-
 /**
- * Conten for ucb_mma_block
+ * Content for ucb_mma_block
  */
 function ucb_mma_block_content() {
 	global $_REQUEST, $_COOKIE; //TODO
